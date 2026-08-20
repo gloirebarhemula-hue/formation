@@ -1,0 +1,122 @@
+{% extends "base.html" %} {% block main %}
+
+<main class="princ">
+  <div class="nav">
+    <button id="retour">Evenements</button>
+    <a href="{{url_for('home')}}"><button id="button">Acceuil</button></a>
+    <a href="{{url_for('deconnexion')}}"
+      ><button id="deconnect">Déconnection</button></a
+    >
+  </div>
+
+  <section id="vi">
+    <div class="iii">
+      <div class="bbb">
+        <h1>
+          Hello <br />
+          <b>{{current_user.prenom}}!</b>
+        </h1>
+        <p>
+          Nous commencerons progressivement notre parcours avec les premières
+          notions d’algorithmique, de programmation web et de langage C, avant
+          d’aborder l’électronique, l’IoT et les systèmes embarqués.
+        </p>
+        <span
+          ><img
+            src="{{url_for('static', filename='img/icons/icon2.png')}}"
+            height="18px"
+            alt="icn"
+          />Qualité des informations</span
+        >
+      </div>
+      <p>
+        <img
+          class="imm"
+          src="{{url_for('static', filename='img/img.jpg')}}"
+          alt="png"
+        />
+      </p>
+    </div>
+    <div class="section">
+      {% if current_user.role == 'admin' %}
+      <form enctype="multipart/form-data" class="formul" method="post">
+        <h1>Choix de fichier</h1>
+        <input
+          type="file"
+          name="fichier"
+          id="file"
+          placeholder="ajouter un fichier"
+          accept=".mp4,.mkv,.mov,.m4v,.avi"
+          required
+        />
+        <input type="text" name="nom" placeholder="Nom du fichier" required />
+        <input
+          type="text"
+          name="description"
+          placeholder="Entrer la desciption"
+          required
+        />
+        <input type="submit" class="send" value="Envoyer" />
+      </form>
+      {% endif %}
+      <div class="zo">
+        {% for f in fichiers %}
+        <div class="zone">
+          <h1>{{f}}</h1>
+          <div class="boutt">
+            {% if current_user.role == 'admin' %}
+            <a href="{{url_for('effacer', nom=f )}}" class="supp">Supprimer</a>
+            {% endif %}
+            <a onclick="voir('{{loop.index}}', '{{data[f].url}}')" id="open"
+              ><img
+                src="{{url_for('static', filename='img/icons/icon4.png')}}"
+                alt="png"
+                height="30"
+              />
+              <p id="btn-{{loop.index}}">Ouvrir</p></a
+            >
+          </div>
+          <p>{{data[f].description }}</p>
+        </div>
+        <div class="vid" id="player-{{loop.index}}"></div>
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+  <section class="section" id="even">
+    <h1>Evenements</h1>
+    {% if current_user.role == 'admin' %}
+    <form action="{{url_for('ajout')}}" class="formul" method="post">
+      <h1>Ajout d'evenement</h1>
+      <input
+        type="text"
+        name="titre"
+        placeholder="titre de l'evenement"
+        required
+      />
+      <input type="text" name="message" placeholder="message" required />
+      <input type="submit" class="send" value="Envoyer" />
+    </form>
+    {% endif %} {% if textes %}
+    <div class="zoon">
+      {% for t in textes %}
+      <div class="zz">
+        <h1>{{ t.titre }}</h1>
+        <small>date /le{{t.date_enregistrement.strftime('%d/%m/%Y')}}</small>
+
+        <p>{{t.message}}</p>
+        {% if current_user.role == 'admin' %}
+        <a href="{{url_for('effaceEv', id = t.id )}}" method="post" class="supp"
+          >Supprimer</a
+        >
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p>pas encore d'evenement disponible</p>
+    {% endif %}
+  </section>
+</main>
+
+{% endblock main %}

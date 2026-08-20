@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      id="theme"
+      href="{{url_for('static', filename='sombre.css')}}"
+      data-sombre="{{url_for('static', filename='sombre.css')}}"
+      data-clair="{{url_for('static', filename='clair.css')}}"
+    />
+    <title>Formation</title>
+  </head>
+  <body>
+    <header>
+      <div id="wacth">
+        <img
+          src="{{url_for('static', filename='img/icons/icon6.png')}}"
+          height="28px"
+          alt="icn"
+        />
+        <b id="clock">00:00:00</b>
+      </div>
+      <input type="checkbox" name="mode" id="mode" placeholder="dark" />
+    </header>
+    {% block main %}{% endblock main %}
+    <script src="{{url_for('static', filename='script.js')}}"></script>
+  </body>
+</html>

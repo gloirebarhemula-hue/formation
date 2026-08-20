@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block main %}
+
+
+<main class="main">
+<div class="nav">
+  <a href="{{url_for('deconnexion')}}" ><button id="deconnect">Déconnection</button></a>
+</div>
+<section class="home">
+    <div class="para">
+        <h1>Hey... <br> <b> {{current_user.prenom}} {{current_user.nom}} !!</b> </h1>
+<p>Bienvenue à toutes et à tous dans le groupe officiel de la formation en Système embarqué et IoT. <br> Nous sommes heureux de vous compter parmi les participants de cette expérience de six semaines, conçue pour développer des compétences pratiques en programmation, électronique, IoT et systèmes embarqués. <br> Préparez-vous à apprendre, expérimenter et progresser ensemble dans une ambiance dynamique et collaborative.</p>
+<div class="p"><p><img src="{{url_for('static', filename='img/icons/icon2.png')}}" height="18px" alt="icn">Software coding</p><p><img src="{{url_for('static', filename='img/icons/icon2.png')}}" height="18px" alt="icn">Hardware coding</p></div>
+<a class="welcome" href="{{url_for('page')}}"><button class="bout">Commencer <img src="{{url_for('static', filename='img/icons/icon1.png')}}" height="38px" alt="png"></button></a>
+    </div>
+<div class="parag">
+    <img src="{{url_for('static', filename='img/img1.jpg')}}" alt="png">
+    <div>
+        <p class="pp"><img id="img" src="{{url_for('static', filename='img/icons/icon3.png')}}" alt="icn">Limite...</p>
+        {% if numb > 0 %}
+    <h2>Le nombre des places restantes est <b class="b">{{ numb + 1 }}</b></h2>
+    {% else %}
+    <h2> les places d'insciption sont epuisé </h3>
+    {% endif %}
+    <a href="{{url_for('index')}}" ><button class="quit">Quitter</button></a>
+    </div>
+</div>
+
+</section>
+
+
+    {% if current_user.role =="admin" %}
+<section class="table">
+    <h1 class="h2">La liste de étudiants inscrits</h1>
+    
+        <input type="search" name="search" id="cherche" placeholder="Rechercher etudiant">
+    </form>
+    <div id="ta">
+        <table>
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Post nom</th>
+                <th>Prénom</th>
+                <th>Promotion</th>
+                <th>Date d'inscription</th>
+                <th>Suppression User</th>
+            </tr>
+        </thead>
+        {% for user in users %}
+        <tbody>
+            <tr class="user">                
+                <td>{{user.nom}}</td>
+                <td>{{user.postnom}}</td>
+                <td>{{user.prenom}}</td>
+                <td>{{user.promotion}}</td>
+                <td>{{user.date.strftime('%d/%m/%y à %H:%M')}}</td>
+                <td id="bttt">
+                    <form action="{{url_for('delete', user_id = user.id)}}" method="post" onsubmit="return confirm('supprimer{{user.nom}}?')">
+                        <input type="submit" class="bttt" value="supprimer">
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+        {% endfor %}
+    </table>
+    </div>
+</section>
+    {% endif %}
+
+</main>
+
+
+
+{% endblock main %}

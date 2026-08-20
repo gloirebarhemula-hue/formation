@@ -1,0 +1,139 @@
+{% extends 'base.html' %} {% block main %} {% if total <= y %}
+
+<section id="hello">
+  <h1>Bienvenue sur notre site</h1>
+  <p>
+    Une formation exceptionnelle en Système embarqué et IoT ouvre ses portes à
+    l’U.C.B à partir du 7 septembre 2026. <br />
+    Pendant six semaines, les participants découvriront la programmation web,
+    l’algorithmique, le langage C, l’électronique et les systèmes embarqués.
+    <br />
+    Les places étant limitées, les personnes intéressées sont invitées à
+    s’inscrire rapidement afin de garantir leur participation. <br />
+    L’inscription est fixée à <b>11.000fc</b>, sans frais mensuels.
+  </p>
+  <div>
+    <button id="btn_I">Enregistrement</button>
+    <button id="btn_C">Connection</button>
+  </div>
+</section>
+
+<section class="auth" id="inscription">
+  <form method="post" class="form">
+    <img
+      src="{{url_for('static', filename='img/icons/icon5.png')}}"
+      alt="png"
+      width="150px"
+    />
+    <h1 class="title">Enregistrement</h1>
+    <input type="hidden" name="action" value="Inscription" />
+    <div class="champ">
+      <label>Prénom : </label>
+      <input
+        class="input"
+        type="text"
+        name="prenom"
+        placeholder="first name"
+        required
+      />
+    </div>
+    <div class="champ">
+      <label>Nom : </label>
+      <input class="input" type="text" name="nom" placeholder="name" required />
+    </div>
+    <div class="champ">
+      <label>Post nom : </label>
+      <input
+        class="input"
+        type="text"
+        name="postnom"
+        placeholder="last name"
+        required
+      />
+    </div>
+    <div class="champ">
+      <label>Promotion : </label>
+      <input
+        class="input"
+        type="text"
+        name="promotion"
+        placeholder="class"
+        required
+      />
+    </div>
+    <div class="champ">
+      <label>Rôle : </label>
+      <select name="role" id="rol" title="role" class="role" required>
+        <option value="etudiant">Etudiant</option>
+        <option value="admin">Administrateur</option>
+      </select>
+    </div>
+    <div id="code" class="champ">
+      <label>Code Administrateur : </label>
+      <input
+        class="input"
+        type="password"
+        name="code"
+        id="password"
+        placeholder="password"
+      />
+      <label
+        >Voir le code :
+        <input type="checkbox" name="check" id="check" placeholder="..."
+      /></label>
+    </div>
+    <input type="submit" value="Enregistrer" class="btn" />
+  </form>
+  <p>déjà enregistrer?<button id="btn" class="bt">Connection</button></p>
+</section>
+{% else %}
+<p>Les Inscription sont maintenant cloturer nombre limit atteint</p>
+<button>Connection</button>
+
+{% endif %}
+<section class="auth" id="connection">
+  <form method="post" class="form">
+    <img
+      src="{{url_for('static', filename='img/icons/icon5.png')}}"
+      alt="png"
+      width="150px"
+    />
+    <h1 class="title">Connection</h1>
+    <input type="hidden" name="action" value="Connection" />
+    <div class="champ">
+      <label>Prénom : </label>
+      <input
+        class="input"
+        type="text"
+        name="prenom"
+        placeholder="first name"
+        required
+      />
+    </div>
+    <div class="champ">
+      <label>Nom : </label>
+      <input class="input" type="text" name="nom" placeholder="name" required />
+    </div>
+    <div class="champ">
+      <label>Post nom : </label>
+      <input
+        class="input"
+        type="text"
+        name="postnom"
+        placeholder="last name"
+        required
+      />
+    </div>
+    <div class="champ">
+      <label>Rôle : </label>
+      <select name="role" id="role" title="role" class="role" required>
+        <option value="etudiant">Etudiant</option>
+        <option value="admin">Administrateur</option>
+      </select>
+    </div>
+    <input type="submit" value="Connecter" class="btn" />
+  </form>
+  <p>pas enregistrer?<button id="btn1" class="bt">Enregistre</button></p>
+</section>
+
+{% endblock main %}
