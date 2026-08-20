@@ -23,19 +23,30 @@ cloudinary.config(
     secure = True
 )
 
-TURSO_URL = os.getenv("TURSO_URL")
-TURSO_TOKEN = os.getenv("TURSO_TOKEN")
 
 
 
-if TURSO_URL and TURSO_TOKEN:
-    app.config['SQLALCHEMY_DATABASE_URI'] = f"sqlite+{TURSO_URL}/?authToken={TURSO_TOKEN}&secure=true"
+app.config["SECRET_KEY"] = os.getenv(
+    "SECRET_KEY",
+    "dev-secret-key-change-me"
+)
+if os.getenv("RENDER"):
+    TURSO_URL = os.getenv("TURSO_DATABASE_URL")
+    TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
+    if not TURSO_URL:
+        raise RuntimeError("TURSO_DATABASE_URL est manquant")
+    if not TURSO_TOKEN:
+        raise RuntimeError("TURSO_AUTH_TOKEN est manquant")
+    app.config["SQLALCHEMY_DATABASE_URI"] = (
+        f"sqlite+{TURSO_URL}/"
+        f"?authToken={TURSO_TOKEN}&secure=true"
+    )
+    print("→ Base de données : TURSO")
 else:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///donnees.db'
+    app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
+    print("→ Base de données : SQLITE LOCAL")
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] =os.getenv("SECRET_KEY")
 
 
 
