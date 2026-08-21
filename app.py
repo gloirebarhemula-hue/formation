@@ -1,4 +1,3 @@
-
 import os
 import json
 from datetime import datetime
@@ -6,166 +5,100 @@ from datetime import datetime
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
-
 from dotenv import load_dotenv
-
 from werkzeug.security import check_password_hash, generate_password_hash
-
-from flask import (
-    Flask,
-    flash,
-    redirect,
-    render_template,
-    request,
-    send_from_directory,
-    url_for,
-)
-
-from flask_login import (
-    LoginManager,
-    UserMixin,
-    current_user,
-    login_required,
-    login_user,
-    logout_user,
-)
-
+from flask import Flask, flash, redirect, render_template, request, send_from_directory, url_for
+from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
 
-
 # =========================================================
-# ENVIRONMENT
+# INITIALISATION
 # =========================================================
 
 load_dotenv()
 
-
-# =========================================================
-# FLASK
-# =========================================================
-
 app = Flask(__name__)
+app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
 
-app.config["SECRET_KEY"] = os.getenv(
-    "SECRET_KEY",
-    "dev-secret-key-change-me",
-)
-
-
-# =========================================================
-# MEDIA DIRECTORY
-# =========================================================
-
-os.makedirs("media", exist_ok=True)
-
-
-# =========================================================
-# CLOUDINARY
-# =========================================================
+os.makedirs('media', exist_ok=True)
 
 cloudinary.config(
-    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
-    api_key=os.getenv("CLOUDINARY_API_KEY"),
-    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
-    secure=True,
+    cloud_name=os.getenv('CLOUDINARY_CLOUD_NAME'),
+    api_key=os.getenv('CLOUDINARY_API_KEY'),
+    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
+    secure=True
 )
 
+# =========================================================
+# BASE DE DONNÉES (NEON POSTGRESQL / LOCAL)
+# =========================================================
 
-# =========================================================
-# DATABASE (TURSO / LOCAL SQLITE)
-# =========================================================
-# =========================================================
-# DATABASE (TURSO / LOCAL SQLITE)
-# =========================================================
-if os.getenv("RENDER", "").lower() == "true":
-    TURSO_URL = os.getenv("TURSO_DATABASE_URL", "").strip()
-    TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "").strip()
+if os.getenv("RENDER"):
+    DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
     
-    if not TURSO_URL:
-        raise RuntimeError("TURSO_DATABASE_URL est manquant.")
-    if not TURSO_TOKEN:
-        raise RuntimeError("TURSO_AUTH_TOKEN est manquant.")
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL est manquant dans les variables d'environnement")
     
-    # Nettoyage des préfixes
-    for prefix in ["sqlite+libsql://", "libsql://", "https://", "http://"]:
-        if TURSO_URL.startswith(prefix):
-            TURSO_URL = TURSO_URL[len(prefix):]
-            
-    # Si l'URL contient déjà un "?", on garde uniquement le domaine
-    if "?" in TURSO_URL:
-        TURSO_URL = TURSO_URL.split("?")[0]
+    # SQLAlchemy requiert 'postgresql://' et non 'postgres://'
+    if DATABASE_URL.startswith("postgres://"):
+        DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
         
-    TURSO_URL = TURSO_URL.rstrip("/")
-
-    # Construction propre
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite+libsql://{TURSO_URL}/?authToken={TURSO_TOKEN}&secure=true"
-    print("-> Base de données : TURSO")
+    app.config["SQLALCHEMY_DATABASE_URI"] = DATABASE_URL
+    print("→ Base de données : NEON POSTGRESQL")
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
-    print("-> Base de données : SQLITE LOCAL")
+    print("→ Base de données : SQLITE LOCAL")
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 # =========================================================
-# APPLICATION SETTINGS
+# CONFIGURATION VARIABLES GLOBALES & ADMIN
 # =========================================================
 
 try:
     x = int(os.getenv("x", "100"))
-except ValueError:
-    raise RuntimeError("La variable d'environnement 'x' doit être un entier.")
-
-
-# =========================================================
-# ADMIN CODES
-# =========================================================
+except (ValueError, TypeError):
+    x = 100
 
 code_clair = os.getenv("CODE", "").split(",")
-
-CODE = [
-    c.strip()
-    for c in code_clair
-    if c.strip()
-]
-
-CODE_HASH = [
-    generate_password_hash(c)
-    for c in CODE
-]
-
+CODE = [c.strip() for c in code_clair if c.strip()]
+CODE_HASH = [generate_password_hash(c) for c in CODE]
 
 # =========================================================
-# LOGIN & MODELS
+# MODELS
 # =========================================================
-
-login_manager = LoginManager(app)
-login_manager.login_view = "index"
 
 class User(UserMixin, db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    prenom = db.Column(db.String(20), nullable = False)
-    nom = db.Column(db.String(20), nullable = False)
-    postnom = db.Column(db.String(20), nullable = False)
-    promotion = db.Column(db.String(7), nullable = False)
-    code = db.Column(db.String(5), nullable = True)
-    role = db.Column(db.String(15), nullable = False)
+    id = db.Column(db.Integer, primary_key=True)
+    prenom = db.Column(db.String(20), nullable=False)
+    nom = db.Column(db.String(20), nullable=False)
+    postnom = db.Column(db.String(20), nullable=False)
+    promotion = db.Column(db.String(7), nullable=False)
+    code = db.Column(db.String(100), nullable=True) # Augmenté pour le hash
+    role = db.Column(db.String(15), nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Evenement(db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    titre = db.Column(db.String(20), nullable = False)
-    message = db.Column(db.Text, nullable = False)
-    date_enregistrement = db.Column(db.Date, default = datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    titre = db.Column(db.String(20), nullable=False)
+    message = db.Column(db.Text, nullable=False)
+    date_enregistrement = db.Column(db.Date, default=datetime.utcnow)
 
 class Media(db.Model):
-    id = db.Column(db.Integer, primary_key = True)
-    nom = db.Column(db.String(20), nullable = False)
-    description = db.Column(db.Text, nullable = False)
-    url = db.Column(db.String(500), nullable = False)
-    public_id = db.Column(db.String(500), nullable = False)
-    date_enregistrement = db.Column(db.Date, default = datetime.utcnow)
+    id = db.Column(db.Integer, primary_key=True)
+    nom = db.Column(db.String(50), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    url = db.Column(db.String(500), nullable=False)
+    public_id = db.Column(db.String(500), nullable=False)
+    date_enregistrement = db.Column(db.Date, default=datetime.utcnow)
 
+# =========================================================
+# LOGIN MANAGER
+# =========================================================
+
+login_manager = LoginManager(app)
+login_manager.login_view = 'index'
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -176,7 +109,6 @@ def load_user(user_id):
     except:
         return None
 
-
 # =========================================================
 # ROUTES
 # =========================================================
@@ -186,11 +118,9 @@ def index():
     total = User.query.count()
     if request.method == 'POST':
         if total > x:
-            flash("temps ecouler")
+            flash("temps ecoule")
             pass
-        
         action = request.form.get("action")
-        
         if action == "Inscription":
             prenom = request.form.get("prenom").title().strip()
             nom = request.form.get("nom").upper().strip()
@@ -242,8 +172,6 @@ def index():
 
     return render_template("index.html", total=total, y=x)
 
-
-
 @app.route("/home")
 @login_required
 def home():
@@ -251,8 +179,6 @@ def home():
     n = User.query.count()
     q = request.args.get('q', '').strip()
     return render_template("home.html", users=u, numb=x - n, q=q)
-
-
 
 @app.route("/page", methods=['POST', 'GET'])
 @login_required
@@ -292,8 +218,6 @@ def page():
     fichier = list(data.keys())
     return render_template("page.html", fichiers=fichier, data=data, textes=event)
 
-
-
 @app.route("/delete/<nom>")
 @login_required
 def effacer(nom):
@@ -310,9 +234,7 @@ def effacer(nom):
                 pass
         db.session.delete(media)
         db.session.commit()
-    return redirect("/page")
-
-
+    return redirect(url_for('page'))
 
 @app.route("/add", methods=['POST'])
 @login_required
@@ -328,8 +250,6 @@ def ajout():
         db.session.commit()
     return redirect(url_for('page'))
 
-
-
 @app.route("/delete_Event/<int:id>")
 @login_required
 def effaceEv(id):
@@ -339,18 +259,13 @@ def effaceEv(id):
     if event:
         db.session.delete(event)
         db.session.commit()
-
-    return redirect('/page')
-
-
+    return redirect(url_for('page'))
 
 @app.route("/deconnection")
 @login_required
 def deconnexion():
     logout_user()
     return redirect(url_for("index"))    
-
-
 
 @app.route("/supprimer/<int:user_id>", methods=['POST'])
 @login_required
@@ -359,20 +274,17 @@ def delete(user_id):
         return redirect(url_for('index'))
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
-        flash("Tu ne peux pas te supprimer toi-même")
+        flash("Tu ne peux pas supprimer")
         return redirect(url_for('home'))
     db.session.delete(user)
     db.session.commit()
     flash(f"L'utilisateur {user.nom} a été supprimé")
     return redirect(url_for('home'))
 
-
-
 with app.app_context():
     db.create_all() 
     
 if __name__ == "__main__":
-    # Binding the app to 0.0.0.0 and dynamically pulling port helps deployment platforms
+    # Configuration du port pour Render
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
-app.py
