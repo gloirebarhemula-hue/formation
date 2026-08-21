@@ -92,36 +92,73 @@ cloudinary.config(
 if os.getenv("RENDER", "").lower() == "true":
     TURSO_URL = os.getenv("TURSO_DATABASE_URL")
     TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
-
     if not TURSO_URL:
         raise RuntimeError(
             "TURSO_DATABASE_URL est manquant dans les variables "
             "d'environnement de Render."
         )
-
     if not TURSO_TOKEN:
         raise RuntimeError(
             "TURSO_AUTH_TOKEN est manquant dans les variables "
             "d'environnement de Render."
         )
-
-    # This is the official SQLAlchemy/libSQL connection form
-    # documented by Turso for a remote database.
+    # Retire éventuellement le préfixe sqlite+libsql://
+    # ou libsql:// pour éviter de construire une URL incorrecte.
+    TURSO_URL = TURSO_URL.strip()
+    if TURSO_URL.startswith("libsql://"):
+        TURSO_URL = TURSO_URL[len("libsql://"):]
+    if TURSO_URL.startswith("https://"):
+        TURSO_URL = TURSO_URL[len("https://"):]
     app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"sqlite+{TURSO_URL}/"
-        f"?authToken={TURSO_TOKEN}&secure=true"
+        f"sqlite+libsql://{TURSO_URL}"
+        f"?authToken={TURSO_TOKEN}"
     )
-
     print("-> Base de données : TURSO")
-
+    print("-> URL Turso présente :", bool(TURSO_URL))
+    print("-> Token Turso présent :", bool(TURSO_TOKEN))
+    print("-> Longueur du token :", len(TURSO_TOKEN))
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
     print("-> Base de données : SQLITE LOCAL")
-
-
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
 db = SQLAlchemy(app)
+
+
+
+
+# if os.getenv("RENDER", "").lower() == "true":
+#     TURSO_URL = os.getenv("TURSO_DATABASE_URL")
+#     TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
+
+#     if not TURSO_URL:
+#         raise RuntimeError(
+#             "TURSO_DATABASE_URL est manquant dans les variables "
+#             "d'environnement de Render."
+#         )
+
+#     if not TURSO_TOKEN:
+#         raise RuntimeError(
+#             "TURSO_AUTH_TOKEN est manquant dans les variables "
+#             "d'environnement de Render."
+#         )
+
+#     # This is the official SQLAlchemy/libSQL connection form
+#     # documented by Turso for a remote database.
+#     app.config["SQLALCHEMY_DATABASE_URI"] = (
+#         f"sqlite+{TURSO_URL}/"
+#         f"?authToken={TURSO_TOKEN}&secure=true"
+#     )
+
+#     print("-> Base de données : TURSO")
+
+# else:
+#     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
+#     print("-> Base de données : SQLITE LOCAL")
+
+
+# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# db = SQLAlchemy(app)
 
 
 # =========================================================
