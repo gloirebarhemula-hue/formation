@@ -74,30 +74,26 @@ cloudinary.config(
 # =========================================================
 # DATABASE (TURSO / LOCAL SQLITE)
 # =========================================================
+# =========================================================
+# DATABASE (TURSO / LOCAL SQLITE)
+# =========================================================
 if os.getenv("RENDER", "").lower() == "true":
-    TURSO_URL = os.getenv("TURSO_DATABASE_URL")
-    TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
+    TURSO_URL = os.getenv("TURSO_DATABASE_URL", "").strip()
+    TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "").strip()
     
     if not TURSO_URL:
-        raise RuntimeError("TURSO_DATABASE_URL est manquant.")
+        raise RuntimeError("TURSO_DATABASE_URL est manquant dans les variables d'environnement.")
     if not TURSO_TOKEN:
-        raise RuntimeError("TURSO_AUTH_TOKEN est manquant.")
+        raise RuntimeError("TURSO_AUTH_TOKEN est manquant dans les variables d’environnement.")
     
-    TURSO_URL = TURSO_URL.strip()
-    TURSO_TOKEN = TURSO_TOKEN.strip()
+    # Nettoyage automatique des préfixes et slashes
+    for prefix in ["sqlite+libsql://", "libsql://", "https://", "http://"]:
+        if TURSO_URL.startswith(prefix):
+            TURSO_URL = TURSO_URL[len(prefix):]
+    TURSO_URL = TURSO_URL.rstrip("/")
 
-    # Nettoyage de l'URL
-    if TURSO_URL.startswith("libsql://"):
-        TURSO_URL = TURSO_URL[len("libsql://"):]
-    if TURSO_URL.startswith("https://"):
-        TURSO_URL = TURSO_URL[len("https://"):]
-    if TURSO_URL.endswith("/"):
-        TURSO_URL = TURSO_URL.rstrip("/")
-
-    # Format de connexion pour éviter l'erreur de redirection 308 :
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"sqlite+libsql://{TURSO_URL}/?authToken={TURSO_TOKEN}&secure=true"
-    )
+    # Format officiel sqlalchemy-libsql
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite+libsql://{TURSO_URL}?authToken={TURSO_TOKEN}"
     print("-> Base de données : TURSO")
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
