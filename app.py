@@ -82,17 +82,22 @@ if os.getenv("RENDER", "").lower() == "true":
     TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN", "").strip()
     
     if not TURSO_URL:
-        raise RuntimeError("TURSO_DATABASE_URL est manquant dans les variables d'environnement.")
+        raise RuntimeError("TURSO_DATABASE_URL est manquant.")
     if not TURSO_TOKEN:
-        raise RuntimeError("TURSO_AUTH_TOKEN est manquant dans les variables d’environnement.")
+        raise RuntimeError("TURSO_AUTH_TOKEN est manquant.")
     
-    # Nettoyage automatique des préfixes et slashes
+    # Nettoyage des préfixes
     for prefix in ["sqlite+libsql://", "libsql://", "https://", "http://"]:
         if TURSO_URL.startswith(prefix):
             TURSO_URL = TURSO_URL[len(prefix):]
+            
+    # Si l'URL contient déjà un "?", on garde uniquement le domaine
+    if "?" in TURSO_URL:
+        TURSO_URL = TURSO_URL.split("?")[0]
+        
     TURSO_URL = TURSO_URL.rstrip("/")
 
-    # Format officiel sqlalchemy-libsql (AVEC le slash / et secure=true)
+    # Construction propre
     app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite+libsql://{TURSO_URL}/?authToken={TURSO_TOKEN}&secure=true"
     print("-> Base de données : TURSO")
 else:
@@ -101,7 +106,6 @@ else:
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
-
 
 # =========================================================
 # APPLICATION SETTINGS
