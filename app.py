@@ -1,3 +1,4 @@
+
 import os
 import json
 from datetime import datetime
@@ -71,135 +72,45 @@ cloudinary.config(
 
 
 # =========================================================
-# DATABASE
+# DATABASE (TURSO / LOCAL SQLITE)
 # =========================================================
-#
-# Windows/local:
-#     SQLite -> local.db
-#
-# Render:
-#     Turso -> libSQL via sqlalchemy-libsql
-#
-# IMPORTANT:
-# TURSO_DATABASE_URL must be the URL returned by:
-#     turso db show --url <database>
-#
-# Example:
-#     libsql://my-db-my-org.turso.io
-#
-# =========================================================
-
 if os.getenv("RENDER", "").lower() == "true":
     TURSO_URL = os.getenv("TURSO_DATABASE_URL")
     TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
+    
     if not TURSO_URL:
-        raise RuntimeError(
-            "TURSO_DATABASE_URL est manquant."
-        )
+        raise RuntimeError("TURSO_DATABASE_URL est manquant.")
     if not TURSO_TOKEN:
-        raise RuntimeError(
-            "TURSO_AUTH_TOKEN est manquant."
-        )
+        raise RuntimeError("TURSO_AUTH_TOKEN est manquant.")
+    
     TURSO_URL = TURSO_URL.strip()
     TURSO_TOKEN = TURSO_TOKEN.strip()
-    # Turso doit fournir une URL libsql://
-    if not TURSO_URL.startswith("libsql://"):
-        raise RuntimeError(
-            "TURSO_DATABASE_URL doit commencer par libsql://"
-        )
+
+    # Nettoyage de l'URL
+    if TURSO_URL.startswith("libsql://"):
+        TURSO_URL = TURSO_URL[len("libsql://"):]
+    if TURSO_URL.startswith("https://"):
+        TURSO_URL = TURSO_URL[len("https://"):]
+    if TURSO_URL.endswith("/"):
+        TURSO_URL = TURSO_URL.rstrip("/")
+
+    # Format de connexion pour éviter l'erreur de redirection 308 :
     app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"sqlite+libsql://"
-        f"{TURSO_URL[len('libsql://'):]}"
-        f"?authToken={TURSO_TOKEN}"
+        f"sqlite+libsql://{TURSO_URL}/?authToken={TURSO_TOKEN}&secure=true"
     )
     print("-> Base de données : TURSO")
-    print("-> URL Turso présente :", bool(TURSO_URL))
-    print("-> Token Turso présent :", bool(TURSO_TOKEN))
-    print("-> Longueur token :", len(TURSO_TOKEN))
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
     print("-> Base de données : SQLITE LOCAL")
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
-
-# if os.getenv("RENDER", "").lower() == "true":
-#     TURSO_URL = os.getenv("TURSO_DATABASE_URL")
-#     TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
-#     if not TURSO_URL:
-#         raise RuntimeError(
-#             "TURSO_DATABASE_URL est manquant dans les variables "
-#             "d'environnement de Render."
-#         )
-#     if not TURSO_TOKEN:
-#         raise RuntimeError(
-#             "TURSO_AUTH_TOKEN est manquant dans les variables "
-#             "d'environnement de Render."
-#         )
-#     # Retire éventuellement le préfixe sqlite+libsql://
-#     # ou libsql:// pour éviter de construire une URL incorrecte.
-#     TURSO_URL = TURSO_URL.strip()
-#     if TURSO_URL.startswith("libsql://"):
-#         TURSO_URL = TURSO_URL[len("libsql://"):]
-#     if TURSO_URL.startswith("https://"):
-#         TURSO_URL = TURSO_URL[len("https://"):]
-#     app.config["SQLALCHEMY_DATABASE_URI"] = (
-#         f"sqlite+libsql://{TURSO_URL}"
-#         f"?authToken={TURSO_TOKEN}"
-#     )
-#     print("-> Base de données : TURSO")
-#     print("-> URL Turso présente :", bool(TURSO_URL))
-#     print("-> Token Turso présent :", bool(TURSO_TOKEN))
-#     print("-> Longueur du token :", len(TURSO_TOKEN))
-# else:
-#     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
-#     print("-> Base de données : SQLITE LOCAL")
-# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-# db = SQLAlchemy(app)
-
-
-
-
-# if os.getenv("RENDER", "").lower() == "true":
-#     TURSO_URL = os.getenv("TURSO_DATABASE_URL")
-#     TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
-
-#     if not TURSO_URL:
-#         raise RuntimeError(
-#             "TURSO_DATABASE_URL est manquant dans les variables "
-#             "d'environnement de Render."
-#         )
-
-#     if not TURSO_TOKEN:
-#         raise RuntimeError(
-#             "TURSO_AUTH_TOKEN est manquant dans les variables "
-#             "d'environnement de Render."
-#         )
-
-#     # This is the official SQLAlchemy/libSQL connection form
-#     # documented by Turso for a remote database.
-#     app.config["SQLALCHEMY_DATABASE_URI"] = (
-#         f"sqlite+{TURSO_URL}/"
-#         f"?authToken={TURSO_TOKEN}&secure=true"
-#     )
-
-#     print("-> Base de données : TURSO")
-
-# else:
-#     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
-#     print("-> Base de données : SQLITE LOCAL")
-
-
-# app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
-# db = SQLAlchemy(app)
 
 
 # =========================================================
 # APPLICATION SETTINGS
 # =========================================================
 
-# Prevent the application from crashing if x is not defined.
-# Change this value in Render with the environment variable "x".
 try:
     x = int(os.getenv("x", "100"))
 except ValueError:
@@ -225,13 +136,11 @@ CODE_HASH = [
 
 
 # =========================================================
-# LOGIN
+# LOGIN & MODELS
 # =========================================================
 
 login_manager = LoginManager(app)
-login_manager.init_app(app)
 login_manager.login_view = "index"
-
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key = True)
@@ -258,18 +167,6 @@ class Media(db.Model):
     date_enregistrement = db.Column(db.Date, default = datetime.utcnow)
 
 
-
-login_manager = LoginManager(app)
-login_manager.init_app(app)
-login_manager.login_view='index'
-x = os.getenv("x")
-x=int(x)
-code_clair = os.getenv("CODE", "").split(",")
-CODE = [c.strip() for c in code_clair if c.strip()]
-CODE_HASH = [generate_password_hash(c) for c in CODE]
-
-
-
 @login_manager.user_loader
 def load_user(user_id):
     if user_id is None or user_id == 'None':
@@ -280,6 +177,9 @@ def load_user(user_id):
         return None
 
 
+# =========================================================
+# ROUTES
+# =========================================================
 
 @app.route("/", methods=['POST', 'GET'])
 def index():
@@ -288,7 +188,9 @@ def index():
         if total > x:
             flash("temps ecouler")
             pass
+        
         action = request.form.get("action")
+        
         if action == "Inscription":
             prenom = request.form.get("prenom").title().strip()
             nom = request.form.get("nom").upper().strip()
@@ -304,11 +206,10 @@ def index():
             if code != "":
                 if any(check_password_hash(h, code) for h in CODE_HASH):
                     if User.query.filter_by(code=generate_password_hash(code)).first():
-                        flash("ce compt exist déjà")
+                        flash("ce compte existe déjà")
                         return redirect(url_for("index"))
                     
                     role = "admin"
-                
                 else:
                     flash("code incorrect")
                     return redirect(url_for("index"))
@@ -322,7 +223,7 @@ def index():
                 promotion=promotion,
                 code=codeh, 
                 role=role
-                )
+            )
             db.session.add(user)
             db.session.commit()
             login_user(user)
@@ -334,12 +235,12 @@ def index():
             postnom = request.form.get("postnom").upper().strip()
             role = request.form.get("role").lower().strip()
             user = User.query.filter_by(nom=nom, postnom=postnom, prenom=prenom, role=role).first()
-            if user :
+            if user:
                 login_user(user)
                 return redirect(url_for("home"))
             flash("compte pas trouver")
 
-    return render_template("index.html", total = total, y = x)
+    return render_template("index.html", total=total, y=x)
 
 
 
@@ -349,15 +250,15 @@ def home():
     u = User.query.all()
     n = User.query.count()
     q = request.args.get('q', '').strip()
-    return render_template("home.html", users = u,numb = x - n,q=q)
+    return render_template("home.html", users=u, numb=x - n, q=q)
 
 
 
-@app.route("/page", methods = ['POST', 'GET'])
+@app.route("/page", methods=['POST', 'GET'])
 @login_required
 def page():
     all_media = Media.query.order_by(Media.date_enregistrement.desc()).all()
-    data = {m.nom:{"description":m.description, "url": m.url, "public_id": m.public_id,"date":m.date_enregistrement}for m in all_media}
+    data = {m.nom: {"description": m.description, "url": m.url, "public_id": m.public_id, "date": m.date_enregistrement} for m in all_media}
 
     event = Evenement.query.order_by(Evenement.date_enregistrement.desc()).all()
 
@@ -371,18 +272,17 @@ def page():
             newNom = f"{nom}.{ext}"
     
             result = cloudinary.uploader.upload(
-                    f,
-                    resource_type="auto",
-                    public_id=f"media/{nom}"
-                )
+                f,
+                resource_type="auto",
+                public_id=f"media/{nom}"
+            )
             existing = Media.query.filter_by(nom=newNom).first()
             if existing:
                 existing.description = description
                 existing.url = result['secure_url']
                 existing.public_id = result['public_id']
-
             else:
-                nouveau = Media(nom=newNom, description=description, url=result['secure_url'],public_id=result['public_id'])
+                nouveau = Media(nom=newNom, description=description, url=result['secure_url'], public_id=result['public_id'])
                 db.session.add(nouveau)
 
         db.session.commit()
@@ -390,7 +290,7 @@ def page():
         return redirect(url_for('page'))
 
     fichier = list(data.keys())
-    return render_template("page.html", fichiers = fichier, data = data, textes = event)
+    return render_template("page.html", fichiers=fichier, data=data, textes=event)
 
 
 
@@ -398,7 +298,7 @@ def page():
 @login_required
 def effacer(nom):
     if current_user.role != "admin":
-        return redirect('index')
+        return redirect(url_for('index'))
     media = Media.query.filter_by(nom=nom).first()
     if media:
         try:
@@ -414,16 +314,16 @@ def effacer(nom):
 
 
 
-@app.route("/add", methods = ['POST'])
+@app.route("/add", methods=['POST'])
 @login_required
 def ajout():
     if current_user.role != "admin":
-        return redirect('index')
+        return redirect(url_for('index'))
     titre = request.form.get("titre").upper().strip()
     message = request.form.get("message")
 
     if titre and message:
-        nouvel_event =Evenement(titre=titre, message=message)
+        nouvel_event = Evenement(titre=titre, message=message)
         db.session.add(nouvel_event)
         db.session.commit()
     return redirect(url_for('page'))
@@ -434,7 +334,7 @@ def ajout():
 @login_required
 def effaceEv(id):
     if current_user.role != "admin":
-        return redirect('index')
+        return redirect(url_for('index'))
     event = Evenement.query.get(id)
     if event:
         db.session.delete(event)
@@ -456,14 +356,14 @@ def deconnexion():
 @login_required
 def delete(user_id):
     if current_user.role != "admin":
-        return redirect('index')
+        return redirect(url_for('index'))
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
-        flash("Tu ne peux pas supprimer")
+        flash("Tu ne peux pas te supprimer toi-même")
         return redirect(url_for('home'))
     db.session.delete(user)
     db.session.commit()
-    flash(f"L'utilisateur {user.nom} supprimer")
+    flash(f"L'utilisateur {user.nom} a été supprimé")
     return redirect(url_for('home'))
 
 
@@ -471,5 +371,8 @@ def delete(user_id):
 with app.app_context():
     db.create_all() 
     
-if __name__=="__main__":
-    app.run()
+if __name__ == "__main__":
+    # Binding the app to 0.0.0.0 and dynamically pulling port helps deployment platforms
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
+app.py
