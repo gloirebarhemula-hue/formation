@@ -132,7 +132,7 @@ def index():
             if User.query.filter_by(nom=nom, postnom=postnom, prenom=prenom).first():
                 flash("ce compte existe déjà")
                 return redirect(url_for("index"))
-                                                            
+                                                                            
             if code != "":
                 if any(check_password_hash(h, code) for h in CODE_HASH):
                     if User.query.filter_by(code=generate_password_hash(code)).first():
@@ -154,10 +154,16 @@ def index():
                 code=codeh, 
                 role=role
             )
-            db.session.add(user)
-            db.session.commit()
-            login_user(user)
-            return redirect(url_for("home"))   
+            
+            try:
+                db.session.add(user)
+                db.session.commit()
+                login_user(user)
+                return redirect(url_for("home"))
+            except Exception as e:
+                db.session.rollback() # Prévention de l'erreur 9h9h
+                flash("Une erreur est survenue lors de l'inscription.")
+                return redirect(url_for("index"))
 
         elif action == "Connection":
             prenom = request.form.get("prenom").title().strip()
@@ -190,29 +196,34 @@ def page():
 
     if request.method == 'POST':
         f = request.files.get("fichier")
-        description = request.form.get('description').capitalize()
-        nom = request.form.get('nom').capitalize().strip()
+        description = request.form.get('description', '').capitalize()
+        nom = request.form.get('nom', '').capitalize().strip()
 
         if f and nom:
-            ext = f.filename.rsplit('.', 1)[-1]
-            newNom = f"{nom}.{ext}"
-    
-            result = cloudinary.uploader.upload(
-                f,
-                resource_type="auto",
-                public_id=f"media/{nom}"
-            )
-            existing = Media.query.filter_by(nom=newNom).first()
-            if existing:
-                existing.description = description
-                existing.url = result['secure_url']
-                existing.public_id = result['public_id']
-            else:
-                nouveau = Media(nom=newNom, description=description, url=result['secure_url'], public_id=result['public_id'])
-                db.session.add(nouveau)
+            try:
+                ext = f.filename.rsplit('.', 1)[-1]
+                newNom = f"{nom}.{ext}"
+        
+                result = cloudinary.uploader.upload(
+                    f,
+                    resource_type="auto",
+                    public_id=f"media/{nom}"
+                )
+                existing = Media.query.filter_by(nom=newNom).first()
+                if existing:
+                    existing.description = description
+                    existing.url = result['secure_url']
+                    existing.public_id = result['public_id']
+                else:
+                    nouveau = Media(nom=newNom, description=description, url=result['secure_url'], public_id=result['public_id'])
+                    db.session.add(nouveau)
 
-        db.session.commit()
-        flash("media ajouté avec succès !")
+                db.session.commit()
+                flash("media ajouté avec succès !")
+            except Exception as e:
+                db.session.rollback() # Prévention de l'erreur 9h9h
+                flash(f"Erreur lors de l'ajout du média.")
+            
         return redirect(url_for('page'))
 
     fichier = list(data.keys())
@@ -232,8 +243,15 @@ def effacer(nom):
                 cloudinary.uploader.destroy(media.public_id, resource_type="video")
             except:
                 pass
-        db.session.delete(media)
-        db.session.commit()
+        
+        try:
+            db.session.delete(media)
+            db.session.commit()
+            flash("Média supprimé avec succès.")
+        except Exception as e:
+            db.session.rollback() # Prévention de l'erreur 9h9h
+            flash("Erreur lors de la suppression dans la base de données.")
+            
     return redirect(url_for('page'))
 
 @app.route("/add", methods=['POST'])
@@ -246,8 +264,14 @@ def ajout():
 
     if titre and message:
         nouvel_event = Evenement(titre=titre, message=message)
-        db.session.add(nouvel_event)
-        db.session.commit()
+        try:
+            db.session.add(nouvel_event)
+            db.session.commit()
+            flash("Événement ajouté.")
+        except Exception as e:
+            db.session.rollback() # Prévention de l'erreur 9h9h
+            flash("Erreur lors de l'ajout de l'événement.")
+            
     return redirect(url_for('page'))
 
 @app.route("/delete_Event/<int:id>")
@@ -257,15 +281,21 @@ def effaceEv(id):
         return redirect(url_for('index'))
     event = Evenement.query.get(id)
     if event:
-        db.session.delete(event)
-        db.session.commit()
+        try:
+            db.session.delete(event)
+            db.session.commit()
+            flash("Événement supprimé.")
+        except Exception as e:
+            db.session.rollback() # Prévention de l'erreur 9h9h
+            flash("Erreur lors de la suppression de l'événement.")
+            
     return redirect(url_for('page'))
 
 @app.route("/deconnection")
 @login_required
 def deconnexion():
     logout_user()
-    return redirect(url_for("index"))    
+    return redirect(url_for("index"))   
 
 @app.route("/supprimer/<int:user_id>", methods=['POST'])
 @login_required
@@ -274,11 +304,17 @@ def delete(user_id):
         return redirect(url_for('index'))
     user = User.query.get_or_404(user_id)
     if user.id == current_user.id:
-        flash("Tu ne peux pas supprimer")
+        flash("Tu ne peux pas te supprimer toi-même")
         return redirect(url_for('home'))
-    db.session.delete(user)
-    db.session.commit()
-    flash(f"L'utilisateur {user.nom} a été supprimé")
+    
+    try:
+        db.session.delete(user)
+        db.session.commit()
+        flash(f"L'utilisateur {user.nom} a été supprimé")
+    except Exception as e:
+        db.session.rollback() # Prévention de l'erreur 9h9h
+        flash("Erreur lors de la suppression de l'utilisateur.")
+        
     return redirect(url_for('home'))
 
 with app.app_context():
