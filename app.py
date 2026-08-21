@@ -92,8 +92,8 @@ if os.getenv("RENDER", "").lower() == "true":
             TURSO_URL = TURSO_URL[len(prefix):]
     TURSO_URL = TURSO_URL.rstrip("/")
 
-    # Format officiel sqlalchemy-libsql
-    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite+libsql://{TURSO_URL}?authToken={TURSO_TOKEN}"
+    # Format officiel sqlalchemy-libsql (AVEC le slash / et secure=true)
+    app.config["SQLALCHEMY_DATABASE_URI"] = f"sqlite+libsql://{TURSO_URL}/?authToken={TURSO_TOKEN}&secure=true"
     print("-> Base de données : TURSO")
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
