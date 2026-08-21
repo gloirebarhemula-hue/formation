@@ -30,7 +30,7 @@
       <p>{{message}}</p>
       <button type="button">close</button>
     </div>
-    {% endfor %}{% endif %} {% block main %}{% endblock main %}
+    {% endfor %}{% endif %}{% endwith %} {% block main %}{% endblock main %}
     <script src="{{url_for('static', filename='script.js')}}"></script>
   </body>
 </html>
