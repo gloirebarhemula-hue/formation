@@ -1,58 +1,167 @@
-import os, json
+import os
+import json
 from datetime import datetime
+
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+
 from dotenv import load_dotenv
+
 from werkzeug.security import check_password_hash, generate_password_hash
-from flask import Flask, flash, redirect,render_template,request, send_from_directory, url_for
-from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
+
+from flask import (
+    Flask,
+    flash,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    url_for,
+)
+
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
+
 from flask_sqlalchemy import SQLAlchemy
 
 
+# =========================================================
+# ENVIRONMENT
+# =========================================================
+
+load_dotenv()
+
+
+# =========================================================
+# FLASK
+# =========================================================
 
 app = Flask(__name__)
 
-
-os.makedirs('media', exist_ok = True)
-load_dotenv()
-cloudinary.config(
-    cloud_name = os.getenv('CLOUDINARY_CLOUD_NAME'),
-    api_key=os.getenv('CLOUDINARY_API_KEY'),
-    api_secret=os.getenv('CLOUDINARY_API_SECRET'),
-    secure = True
-)
-
-
-
-
 app.config["SECRET_KEY"] = os.getenv(
     "SECRET_KEY",
-    "dev-secret-key-change-me"
+    "dev-secret-key-change-me",
 )
-if os.getenv("RENDER"):
+
+
+# =========================================================
+# MEDIA DIRECTORY
+# =========================================================
+
+os.makedirs("media", exist_ok=True)
+
+
+# =========================================================
+# CLOUDINARY
+# =========================================================
+
+cloudinary.config(
+    cloud_name=os.getenv("CLOUDINARY_CLOUD_NAME"),
+    api_key=os.getenv("CLOUDINARY_API_KEY"),
+    api_secret=os.getenv("CLOUDINARY_API_SECRET"),
+    secure=True,
+)
+
+
+# =========================================================
+# DATABASE
+# =========================================================
+#
+# Windows/local:
+#     SQLite -> local.db
+#
+# Render:
+#     Turso -> libSQL via sqlalchemy-libsql
+#
+# IMPORTANT:
+# TURSO_DATABASE_URL must be the URL returned by:
+#     turso db show --url <database>
+#
+# Example:
+#     libsql://my-db-my-org.turso.io
+#
+# =========================================================
+
+if os.getenv("RENDER", "").lower() == "true":
     TURSO_URL = os.getenv("TURSO_DATABASE_URL")
     TURSO_TOKEN = os.getenv("TURSO_AUTH_TOKEN")
+
     if not TURSO_URL:
-        raise RuntimeError("TURSO_DATABASE_URL est manquant")
+        raise RuntimeError(
+            "TURSO_DATABASE_URL est manquant dans les variables "
+            "d'environnement de Render."
+        )
+
     if not TURSO_TOKEN:
-        raise RuntimeError("TURSO_AUTH_TOKEN est manquant")
+        raise RuntimeError(
+            "TURSO_AUTH_TOKEN est manquant dans les variables "
+            "d'environnement de Render."
+        )
+
+    # This is the official SQLAlchemy/libSQL connection form
+    # documented by Turso for a remote database.
     app.config["SQLALCHEMY_DATABASE_URI"] = (
         f"sqlite+{TURSO_URL}/"
         f"?authToken={TURSO_TOKEN}&secure=true"
     )
-    print("→ Base de données : TURSO")
+
+    print("-> Base de données : TURSO")
+
 else:
     app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///local.db"
-    print("→ Base de données : SQLITE LOCAL")
+    print("-> Base de données : SQLITE LOCAL")
+
+
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-
-
-
-
-
 db = SQLAlchemy(app)
+
+
+# =========================================================
+# APPLICATION SETTINGS
+# =========================================================
+
+# Prevent the application from crashing if x is not defined.
+# Change this value in Render with the environment variable "x".
+try:
+    x = int(os.getenv("x", "100"))
+except ValueError:
+    raise RuntimeError("La variable d'environnement 'x' doit être un entier.")
+
+
+# =========================================================
+# ADMIN CODES
+# =========================================================
+
+code_clair = os.getenv("CODE", "").split(",")
+
+CODE = [
+    c.strip()
+    for c in code_clair
+    if c.strip()
+]
+
+CODE_HASH = [
+    generate_password_hash(c)
+    for c in CODE
+]
+
+
+# =========================================================
+# LOGIN
+# =========================================================
+
+login_manager = LoginManager(app)
+login_manager.init_app(app)
+login_manager.login_view = "index"
+
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key = True)
