@@ -71,12 +71,12 @@ CODE_HASH = [generate_password_hash(c) for c in CODE]
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    prenom = db.Column(db.String(20), nullable=False)
-    nom = db.Column(db.String(20), nullable=False)
-    postnom = db.Column(db.String(20), nullable=False)
-    promotion = db.Column(db.String(7), nullable=False)
-    code = db.Column(db.String(100), nullable=True) # Augmenté pour le hash
-    role = db.Column(db.String(15), nullable=False)
+    prenom = db.Column(db.String(50), nullable=False)   # Augmenté à 50
+    nom = db.Column(db.String(50), nullable=False)      # Augmenté à 50
+    postnom = db.Column(db.String(50), nullable=False)  # Augmenté à 50
+    promotion = db.Column(db.String(20), nullable=False)
+    code = db.Column(db.String(255), nullable=True)     # Taille suffisante pour le hash
+    role = db.Column(db.String(20), nullable=False)
     date = db.Column(db.DateTime, default=datetime.utcnow)
 
 class Evenement(db.Model):
@@ -117,41 +117,46 @@ def load_user(user_id):
 def index():
     total = User.query.count()
     if request.method == 'POST':
-        if total > x:
-            flash("temps ecoule")
-            pass
-        action = request.form.get("action")
-        if action == "Inscription":
-            prenom = request.form.get("prenom").title().strip()
-            nom = request.form.get("nom").upper().strip()
-            postnom = request.form.get("postnom").upper().strip()
-            promotion = request.form.get("promotion").lower().strip()
-            role = request.form.get("role").lower().strip()
-            code = request.form.get("code").strip()
+        if total >= x:
+            flash("Nombre maximum d'inscriptions atteint.")
+            return redirect(url_for("index"))
 
-            if User.query.filter_by(nom=nom, postnom=postnom, prenom=prenom).first():
-                flash("ce compte existe déjà")
+        action = request.form.get("action")
+
+        if action == "Inscription":
+            prenom = (request.form.get("prenom") or "").title().strip()
+            nom = (request.form.get("nom") or "").upper().strip()
+            postnom = (request.form.get("postnom") or "").upper().strip()
+            promotion = (request.form.get("promotion") or "").lower().strip()
+            role = (request.form.get("role") or "user").lower().strip()
+            code_saisi = (request.form.get("code") or "").strip()
+
+            if not prenom or not nom or not postnom:
+                flash("Veuillez remplir tous les champs obligatoires.")
                 return redirect(url_for("index"))
-                                                                            
-            if code != "":
-                if any(check_password_hash(h, code) for h in CODE_HASH):
-                    if User.query.filter_by(code=generate_password_hash(code)).first():
-                        flash("ce compte existe déjà")
-                        return redirect(url_for("index"))
-                    
+
+            # Vérification si l'utilisateur existe déjà
+            existing_user = User.query.filter_by(nom=nom, postnom=postnom, prenom=prenom).first()
+            if existing_user:
+                flash("Ce compte existe déjà.")
+                return redirect(url_for("index"))
+
+            code_hash = None
+            if code_saisi:
+                # Vérifier si le code correspond à la liste d'accès admin
+                if any(check_password_hash(h, code_saisi) for h in CODE_HASH):
                     role = "admin"
+                    code_hash = generate_password_hash(code_saisi)
                 else:
-                    flash("code incorrect")
+                    flash("Code administrateur incorrect.")
                     return redirect(url_for("index"))
-                
-            codeh = generate_password_hash(code)
-                
+
             user = User(
                 nom=nom, 
                 postnom=postnom, 
                 prenom=prenom, 
                 promotion=promotion,
-                code=codeh, 
+                code=code_hash, 
                 role=role
             )
             
@@ -161,20 +166,22 @@ def index():
                 login_user(user)
                 return redirect(url_for("home"))
             except Exception as e:
-                db.session.rollback() # Prévention de l'erreur 9h9h
+                db.session.rollback()
+                print(f"Erreur SQL : {e}")  # Utile dans les logs Render
                 flash("Une erreur est survenue lors de l'inscription.")
                 return redirect(url_for("index"))
 
         elif action == "Connection":
-            prenom = request.form.get("prenom").title().strip()
-            nom = request.form.get("nom").upper().strip()
-            postnom = request.form.get("postnom").upper().strip()
-            role = request.form.get("role").lower().strip()
-            user = User.query.filter_by(nom=nom, postnom=postnom, prenom=prenom, role=role).first()
+            prenom = (request.form.get("prenom") or "").title().strip()
+            nom = (request.form.get("nom") or "").upper().strip()
+            postnom = (request.form.get("postnom") or "").upper().strip()
+            
+            user = User.query.filter_by(nom=nom, postnom=postnom, prenom=prenom).first()
             if user:
                 login_user(user)
                 return redirect(url_for("home"))
-            flash("compte pas trouver")
+            
+            flash("Compte non trouvé.")
 
     return render_template("index.html", total=total, y=x)
 
