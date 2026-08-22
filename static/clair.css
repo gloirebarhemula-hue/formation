@@ -492,13 +492,16 @@ a{text-decoration: none;}
     height: auto;
     margin: 2em auto;
     background: #84b6fb3c;
-    padding: 5em 2em;
+    padding: 5em auto;
     border-radius: 45px;
     box-shadow: inset -1px 200px 20px 6px rgba(240, 248, 255, 0.829);
 }
 #hello h1{
-    font-size: 5em;color: #3d3d3d;
+    font-size: 3em;color: #3d3d3d;
     margin: 0 2em;padding: 0 1em;
+}
+#hello p{
+    max-width: 40em;
 }
 #hello button{
     min-width: 15em;
