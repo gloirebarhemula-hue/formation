@@ -8,6 +8,7 @@
     "orientation": "any",
     "scope": "/",
     "theme_color": "#000000",
+    "description": "plate forme en ligne de Formation en Iot et Systeme embarqué",
     "icons": [
         {
             "src": "icon_icon.png",
