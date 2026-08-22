@@ -497,11 +497,11 @@ a{text-decoration: none;}
     box-shadow: inset -1px 200px 20px 6px rgba(240, 248, 255, 0.829);
 }
 #hello h1{
-    font-size: 3em;color: #3d3d3d;
+    font-size: 4em;color: #3d3d3d;
     margin: 0 2em;padding: 0 1em;
 }
 #hello p{
-    max-width: 40em;
+    max-width: 40em;padding: 1em;
 }
 #hello button{
     min-width: 15em;
