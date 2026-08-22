@@ -492,13 +492,13 @@ a{text-decoration: none;}
     height: auto;
     margin: 2em auto;
     background: #84b6fb3c;
-    padding: 5em 4em;
+    padding: 5em 2em;
     border-radius: 45px;
     box-shadow: inset -1px 200px 20px 6px rgba(240, 248, 255, 0.829);
 }
 #hello h1{
     font-size: 5em;color: #3d3d3d;
-    margin: 0;padding: 0 2em;
+    margin: 0 2em;padding: 0 1em;
 }
 #hello button{
     min-width: 15em;

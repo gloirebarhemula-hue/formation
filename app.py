@@ -53,6 +53,13 @@ else:
     print("→ Base de données : SQLITE LOCAL")
 
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+    "pool_pre_ping": True,
+    "pool_recycle": 280,
+    "connect_args": {
+        "sslmode": "require", "connect_timeout": 10
+    }
+}
 db = SQLAlchemy(app)
 
 # =========================================================
