@@ -1,6 +1,7 @@
 import os
 import json
 from datetime import datetime
+from urllib import response
 
 import cloudinary
 import cloudinary.uploader
@@ -10,6 +11,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from flask import Flask, flash, redirect, render_template, request, send_from_directory, session, url_for
 from flask_login import LoginManager, UserMixin, current_user, login_required, login_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
+from whitenoise import WhiteNoise
 
 # =========================================================
 # INITIALISATION
@@ -19,6 +21,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "dev-secret-key-change-me")
+app.wsgi_app=WhiteNoise(app.wsgi_app,root='static')
 
 os.makedirs('media', exist_ok=True)
 
@@ -96,6 +99,14 @@ class Media(db.Model):
 # =========================================================
 # LOGIN MANAGER
 # =========================================================
+@app.after_request
+def cache():
+    response.headers["Cache-Control"]="no-cache, must-revalidate,max-age=0"
+    response.headers["Pragma"]="no-cache"
+    response.headers["Expires"]="0"
+    return response
+
+
 
 login_manager = LoginManager(app)
 login_manager.login_view = 'index'
@@ -112,6 +123,7 @@ def load_user(user_id):
 # =========================================================
 # ROUTES
 # =========================================================
+
 
 @app.route("/", methods=['POST', 'GET'])
 def index():
@@ -188,6 +200,8 @@ def index():
 @app.route("/home")
 @login_required
 def home():
+    if not current_user.is_authenticated and not "user_id" in session:
+        return redirect(url_for(index))
     u = User.query.all()
     n = User.query.count()
     q = request.args.get('q', '').strip()
@@ -196,6 +210,7 @@ def home():
 @app.route("/page", methods=['POST', 'GET'])
 @login_required
 def page():
+    
     all_media = Media.query.order_by(Media.date_enregistrement.desc()).all()
     data = {m.nom: {"description": m.description, "url": m.url, "public_id": m.public_id, "date": m.date_enregistrement} for m in all_media}
 
@@ -301,8 +316,8 @@ def effaceEv(id):
 @app.route("/deconnection")
 @login_required
 def deconnexion():
-    logout_user()
     session.clear()
+    logout_user()
     return redirect(url_for("index"))   
 
 @app.route("/supprimer/<int:user_id>", methods=['POST'])
