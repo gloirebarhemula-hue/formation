@@ -99,13 +99,6 @@ class Media(db.Model):
 # =========================================================
 # LOGIN MANAGER
 # =========================================================
-@app.after_request
-def cache():
-    response.headers["Cache-Control"]="no-cache, must-revalidate,max-age=0"
-    response.headers["Pragma"]="no-cache"
-    response.headers["Expires"]="0"
-    return response
-
 
 
 login_manager = LoginManager(app)
@@ -119,6 +112,14 @@ def load_user(user_id):
         return User.query.get(int(user_id))
     except:
         return None
+
+
+@app.after_request
+def cache(response):
+    response.headers["Cache-Control"]="no-cache, must-revalidate,max-age=0"
+    response.headers["Pragma"]="no-cache"
+    response.headers["Expires"]="0"
+    return response
 
 # =========================================================
 # ROUTES
