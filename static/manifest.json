@@ -1,0 +1,20 @@
+{
+    "name": "Formation IoT et SE",
+    "short_name": "Formation",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#00000",
+    "icon": [
+        {
+            "src": "static/icon_icon.png",
+            "size": "512x512",
+            "type": "image/png"
+        },
+        {
+            "src": "static/icon_icon2.png",
+            "size": "512x512",
+            "type": "image/png"
+        }
+    ]
+}
