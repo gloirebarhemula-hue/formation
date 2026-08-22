@@ -493,7 +493,8 @@ a{text-decoration: none;}
     background: #84b6fb3c;
     border-radius: 45px;
     box-shadow: inset -1px 200px 20px 6px rgba(240, 248, 255, 0.829);
-    margin: 3em auto;
+    margin-bottom: 4em;
+    margin-top: 4em;
 }
 
 #hello h1 {
@@ -505,6 +506,9 @@ a{text-decoration: none;}
     max-width: 35em;
     padding: 2.5em;
 }
+#hello div{
+    margin: 0 auto;
+}
 
 #hello button {
     min-width: 15em;
@@ -513,7 +517,7 @@ a{text-decoration: none;}
     color: #fff;
     padding: 1em;
     font-weight: bold;
-    margin: 1em auto;
+    margin: 1em;
     cursor: pointer;
 }
 #hello button:hover {
