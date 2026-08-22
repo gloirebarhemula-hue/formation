@@ -624,9 +624,7 @@ a {
     flex-direction: column;
     align-items: center;
     height: auto;
-    margin: 2em auto;
     background: #84b6fb3c;
-    padding: 5em auto;
     border-radius: 45px;
     box-shadow: inset -1px 200px 20px 6px rgba(240, 248, 255, 0.829);
 }
@@ -634,13 +632,12 @@ a {
 #hello h1 {
     font-size: 4em;
     color: #3d3d3d;
-    margin: 0 2em;
-    padding: 0 1em;
+    margin: 4em 0;
 }
 
 #hello p {
-    max-width: 40em;
-    padding: 1em;
+    max-width: 35em;
+    padding: 2.5em;
 }
 
 #hello button {
